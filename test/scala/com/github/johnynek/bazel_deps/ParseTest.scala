@@ -29,6 +29,7 @@ class ParseTest extends FunSuite {
                 Some(Set("core", "args", "date").map(Subproject(_))),
                 None,
                 None,
+                None,
                 None))),
           None,
           None)))
@@ -57,6 +58,7 @@ class ParseTest extends FunSuite {
                 Language.Scala(Version("2.11.7"), true),
                 Some(Version("0.16.0")),
                 Some(Set("core", "args", "date").map(Subproject(_))),
+                None,
                 None,
                 None,
                 None))),
@@ -95,6 +97,7 @@ class ParseTest extends FunSuite {
                 Language.Scala(Version("2.11.7"), true),
                 Some(Version("0.16.0")),
                 Some(Set("", "core", "args", "date").map(Subproject(_))),
+                None,
                 None,
                 None,
                 None))),
@@ -136,6 +139,7 @@ class ParseTest extends FunSuite {
                 None,
                 None,
                 None,
+                None,
                 Some(Set(ProcessorClass("com.google.auto.value.processor.AutoValueProcessor")))))),
         None,
         None)))
@@ -160,5 +164,36 @@ class ParseTest extends FunSuite {
     assert(Decoders.decodeModel(Yaml, str).isLeft)
   }
 */
+
+  test("parse classifiers") {
+    val str = """dependencies:
+                |  com.github.jnr:
+                |    jffi:
+                |      lang: java
+                |      version: 1.2.16
+                |      classifiers: ["", javadoc, native]
+                |""".stripMargin('|')
+
+    assert(Decoders.decodeModel(Yaml, str) ==
+      Right(Model(
+        Dependencies(
+          MavenGroup("com.github.jnr") ->
+            Map(ArtifactOrProject("jffi") ->
+              ProjectRecord(
+                Language.Java,
+                Some(Version("1.2.16")),
+                None,
+                Some(Set("", "javadoc", "native").map(Classifier(_))),
+                None,
+                None,
+                None))),
+          None,
+          None)))
+
+    assert(MavenArtifactId(ArtifactOrProject("a"), Classifier("")).asString === "a")
+    assert(MavenArtifactId(ArtifactOrProject("a"), Classifier("c")).asString === "a:jar:c")
+    assert(MavenArtifactId("a").getClassifier === None)
+    assert(MavenArtifactId("a:jar:c").getClassifier === Some("c"))
+  }
 
 }
